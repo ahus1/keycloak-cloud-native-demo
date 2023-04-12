@@ -1,0 +1,3 @@
+Keycloak will be available on https://keycloak.{{ .Values.hostname }}
+  user: admin
+  password: admin

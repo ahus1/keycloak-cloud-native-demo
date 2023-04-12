@@ -1,0 +1,75 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: {{ .Values.namespace }}
+spec:
+  hostname:
+    hostname: keycloak.{{ .Values.hostname }}
+  additionalOptions:
+    - name: db
+      value: postgres
+    - name: db-url
+      value: jdbc:postgresql://postgres:5432/keycloak
+    - name: db-pool-min-size
+      value: {{ quote .Values.dbPoolMinSize }}
+    - name: db-pool-max-size
+      value: {{ quote .Values.dbPoolMaxSize }}
+    - name: db-pool-initial-size
+      value: {{ quote .Values.dbPoolInitialSize }}
+    - name: log-console-output
+      value: json
+    - name: metrics-enabled
+      value: 'true'
+    - name: health-enabled
+      value: 'true'
+    - name: db-username
+      secret:
+        name: keycloak-db-secret
+        key: username
+    - name: db-password
+      secret:
+        name: keycloak-db-secret
+        key: password
+  http:
+    tlsSecret: keycloak-tls-secret
+  instances: {{ .Values.instances }}
+  ingress:
+    enabled: false
+  unsupported:
+    podTemplate:
+      metadata:
+        annotations:
+          checksum/config: {{ include (print $.Template.BasePath "/postgres/postgres-deployment.yaml") . | sha256sum }}-{{ include (print $.Template.BasePath "/keycloak-tls-secret.yaml") . | sha256sum }}
+      spec:
+        containers:
+          -
+            env:
+              - name: JAVA_OPTS_APPEND
+                # using non-blocking random, make DNS lookups expire after 10 seconds and not cache them forever
+                value: >
+                  -Djava.security.egd=file:/dev/urandom -Dnetworkaddress.cache.ttl=10 -XX:+ExitOnOutOfMemoryError
+            startupProbe:
+              httpGet:
+                path: /health/ready
+                port: 8443
+                scheme: HTTPS
+              failureThreshold: 600
+              initialDelaySeconds: 10
+              periodSeconds: 2
+            readinessProbe:
+              httpGet:
+                path: /health/ready
+                port: 8443
+                scheme: HTTPS
+              failureThreshold: 10
+              periodSeconds: 10
+            livenessProbe:
+              httpGet:
+                path: /health/live
+                port: 8443
+                scheme: HTTPS
+              failureThreshold: 10
+              periodSeconds: 10

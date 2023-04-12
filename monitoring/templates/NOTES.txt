@@ -1,0 +1,2 @@
+Grafana will be available on http://grafana.{{ .Values.hostname }}
+Prometheus will be available on http://prometheus.{{ .Values.hostname }}

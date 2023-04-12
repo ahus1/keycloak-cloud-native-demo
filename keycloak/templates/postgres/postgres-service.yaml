@@ -1,0 +1,19 @@
+{{ if or (eq .Values.database "postgres") (eq .Values.database "postgres+infinispan") }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres
+  name: postgres
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
+  selector:
+    app: postgres
+  sessionAffinity: None
+  type: ClusterIP
+{{ end }}

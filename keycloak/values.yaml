@@ -1,0 +1,12 @@
+---
+# default: hungry, for OpenShift sandbox replace with "xxx-dev" project name returned by "oc projects"
+namespace: keycloak
+# default: apps-crc.testing, for OpenShift sandbox replace with ".apps.sandbox-xx.xxxx.xx.openshiftapps.com"
+hostname: 172.30.97.253.nip.io
+dbPoolInitialSize: 5
+dbPoolMaxSize: 10
+dbPoolMinSize: 5
+database: postgres
+instances: 1
+cpuRequests: 0
+cpuLimits: 4
