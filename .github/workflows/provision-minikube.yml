@@ -1,0 +1,56 @@
+name: minikube CI
+
+on:
+  push:
+    # dependabot will create both branches and pull request
+    # only run on pull requests to avoid running twice and creating a release draft
+    branches-ignore:
+      - 'dependabot/**'
+  pull_request:
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: azure/setup-helm@v3.5
+        with:
+          version: 'v3.8.2'
+      - uses: azure/setup-kubectl@v3.2
+        with:
+          version: 'v1.23.3'
+      - name: Setup minikube-Kubernetes
+        uses: manusa/actions-setup-minikube@v2.7.2
+        with:
+          minikube version: 'v1.28.0'
+          # the version of Kubernetes needs to be in-sync with `rebuild.sh`
+          kubernetes version: 'v1.25.3'
+          github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
+          start args: --memory 4096
+      - name: Provision Keycloak and Grafana
+        run: |
+          PATH=$PATH:$GITHUB_WORKSPACE/bin
+          ./rebuild.sh
+          task
+          kubectl get pods -A
+          kubectl get events -A
+      - name: Show logs on failure
+        if: ${{ failure() }}
+        working-directory: provision/minikube
+        run: |
+          kubectl get pods -A
+          kubectl get pods -A -o yaml
+          kubectl get events -A
+          kubectl logs -n keycloak keycloak-0

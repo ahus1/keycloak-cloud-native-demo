@@ -1,0 +1,77 @@
+= Keycloak Cloud Native demo
+:icons: font
+
+image:https://github.com/ahus1/keycloak-cloud-native-demo/actions/workflows/provision-minikube.yml/badge.svg["Minikube CI status",link=https://github.com/ahus1/keycloak-cloud-native-demo/actions/workflows/provision-minikube.yml]
+
+This project shows how to integrate https://www.keycloak.org/[Keycloak] in a Cloud Native environment:
+
+* Deploying Keycloak with its Operator.
+* Collecting metrics from Keycloak and showing them in Grafana.
+* Using Keycloak as an Identity and Access Management (IAM) solution for Grafana.
+
+This is a setup for exploring and training.
+It is not a setup for production as not all ports have been locked down and secured for the ease of exploration.
+
+== About
+
+This is a project I use for demos.
+It contains a fully scripted setup for:
+
+. Setting up Minikube.
+. Deploying Keycloak using the Keycloak Operator.
+. Deploying Prometheus and Grafana.
+. Configuring Keycloak to:
+* Publish metrics to Prometheus.
+* Act as a Single-Sign-On provider for Grafana.
+. Configure Grafana to:
+* Use Keycloak as a Single-Sign-On provider.
+* Present a dashboard with metrics from Keycloak
+
+== Prepare
+
+* Install `https://taskfile.dev/[task]`, `https://helm.sh/[helm]`, `https://stedolan.github.io/jq/[jq]` and `bash` for automation
+* Install `https://minikube.sigs.k8s.io/[minikube]` as a Kubernetes runtime
+* Install `https://kubernetes.io/docs/tasks/tools/[kubectl]` to interact with minikube
+
+NOTE: This project is a minimized version of the https://github.com/keycloak/keycloak-benchmark[keycloak-benchmark] project.
+For more detailed instructions on how to install the tools, visit the https://www.keycloak.org/keycloak-benchmark/kubernetes-guide/latest/installation[installation documentation of keycloak-benchmark].
+
+== Install
+
+. Run `./rebuild.sh` to prepare an empty running minikube instance
+. Run `task` to perform all tasks listed in the `Taskfile.yaml`
+
+== Verify
+
+. Run the script `./isup.sh` to verify that all services are running.
+It then shows output similar to the following:
++
+----
+https://prometheus.192.168.39.120.nip.io/ is up
+https://keycloak.192.168.39.120.nip.io/ is up
+https://grafana.192.168.39.120.nip.io/ is up
+----
+
+. Click on the link for Keycloak and log in with the user `admin` and the password `admin`.
+
+. Click on the link for Grafana.
+As you already logged in before, you won't see another login screen.
+
+== Explore
+
+Have a look around and discover the following:
+
+Keycloak::
+. The client `grafana` that is visible in the UI is created by the script `setup-grafana-in-keycloak.sh`
+. It also exposes the realm roles in the userinfo endpoint; this is set up in the client profile *roles* and its mapper *realm roles*.
+
+Keycloak Operator::
+. The file `keycloak/templates/keycloak.yaml` contains the information for the operator to deploy Keycloak.
+
+Grafana::
+. The file `monitoring.yaml` contains the OpenID connect configuration. Some of the parameters are overwritten when calling helm with the actual URLs from the `Taskfile.yaml`.
+. In the web UI, go to the user profile (click on the avatar in the lower left corner, then on the email address), and see that the user has *Admin* privileges, as the user has the realm role *admin*.
+
+== Further reading
+
+For load testing and more advanced features, have a look at the https://github.com/keycloak/keycloak-benchmark[keycloak-benchmark] project which includes an OpenTelemetry and a variety of different Keycloak configurations.

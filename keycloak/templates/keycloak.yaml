@@ -8,31 +8,29 @@ metadata:
 spec:
   hostname:
     hostname: keycloak.{{ .Values.hostname }}
+  db:
+    vendor: postgres
+    url: jdbc:postgresql://postgres:5432/keycloak
+    poolMinSize: {{ .Values.dbPoolMinSize }}
+    poolMaxSize: {{ .Values.dbPoolMaxSize }}
+    poolInitialSize: {{ .Values.dbPoolInitialSize }}
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
   additionalOptions:
-    - name: db
-      value: postgres
-    - name: db-url
-      value: jdbc:postgresql://postgres:5432/keycloak
-    - name: db-pool-min-size
-      value: {{ quote .Values.dbPoolMinSize }}
-    - name: db-pool-max-size
-      value: {{ quote .Values.dbPoolMaxSize }}
-    - name: db-pool-initial-size
-      value: {{ quote .Values.dbPoolInitialSize }}
     - name: log-console-output
       value: json
     - name: metrics-enabled
       value: 'true'
     - name: health-enabled
       value: 'true'
-    - name: db-username
-      secret:
-        name: keycloak-db-secret
-        key: username
-    - name: db-password
-      secret:
-        name: keycloak-db-secret
-        key: password
+    # necessary as Grafana doesn't support id_token_hints for logout, yet
+    # https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/keycloak/
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: 'true'
   http:
     tlsSecret: keycloak-tls-secret
   instances: {{ .Values.instances }}
@@ -51,6 +49,7 @@ spec:
                 # using non-blocking random, make DNS lookups expire after 10 seconds and not cache them forever
                 value: >
                   -Djava.security.egd=file:/dev/urandom -Dnetworkaddress.cache.ttl=10 -XX:+ExitOnOutOfMemoryError
+                  -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8787
             startupProbe:
               httpGet:
                 path: /health/ready
@@ -73,3 +72,7 @@ spec:
                 scheme: HTTPS
               failureThreshold: 10
               periodSeconds: 10
+            ports:
+              - containerPort: 8787
+                protocol: TCP
+                name: jvmdebug

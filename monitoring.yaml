@@ -17,11 +17,35 @@ grafana:
       # use --set grafana."grafana\.ini".server.root_url=... for this
       root_url: "specify-on-cli"
     feature_toggles:
-      enable: tempoSearch tempoBackendSearch
-    auth.anonymous:
+      enable: accessTokenExpirationCheck
+    log:
+      level: debug
+    auth.basic:
+      enabled: false
+    auth:
+      oauth_auto_login: true
+      disable_login_form: true
+      # use --set grafana."grafana\.ini".... for this
+      signout_redirect_url: https://<PROVIDER_DOMAIN>/auth/realms/<REALM_NAME>/protocol/openid-connect/logout?redirect_uri=http%3A%2F%2F<GRAFANA_DOMAIN>%2Flogin
+    auth.generic_oauth:
+      # https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/keycloak/
       enabled: true
-      org_role: Admin
-      org_name: Main Org.
+      name: Keycloak-OAuth
+      allow_sign_up: true
+      client_id: grafana
+      client_secret: 109vn7vrqnMlS9fZoq4kko4oO5TUM5r8
+      scopes: openid email profile roles
+      email_attribute_path: email
+      login_attribute_path: username
+      name_attribute_path: full_name
+      # use --set grafana."grafana\.ini".... for this
+      auth_url: https://<PROVIDER_DOMAIN>/realms/<REALM_NAME>/protocol/openid-connect/auth
+      token_url: https://<PROVIDER_DOMAIN>/realms/<REALM_NAME>/protocol/openid-connect/token
+      api_url: https://<PROVIDER_DOMAIN>/realms/<REALM_NAME>/protocol/openid-connect/userinfo
+      # use resource_access.grafana for client roles instead of realm roles
+      role_attribute_path: "contains(realm_access.roles[*], 'admin') && 'Admin' || contains(realm_access.roles[*], 'editor') && 'Editor' || 'Viewer'"
+      # only for testing, as Grafana doesn't know about Keycloak's TLS certificate in this setup
+      tls_skip_verify_insecure: true
   datasources:
     datasources.yaml:
       apiVersion: 1
@@ -35,9 +59,6 @@ grafana:
         editable: false
         jsonData:
           timeInterval: 30s
-          exemplarTraceIdDestinations:
-            - datasourceUid: PC9A941E8F2E49454
-              name: trace_id
 
 kube-state-metrics:
   namespaceOverride: monitoring

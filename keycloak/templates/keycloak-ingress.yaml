@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    # allow more response header size when a session expires
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
     route.openshift.io/termination: passthrough
   labels:
     app: keycloak

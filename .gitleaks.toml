@@ -1,0 +1,4 @@
+[whitelist]
+files = [
+    "keycloak-grafana-client.json",
+]

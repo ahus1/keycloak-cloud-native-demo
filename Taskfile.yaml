@@ -10,7 +10,7 @@ vars:
   KC_DB_POOL_INITIAL_SIZE: '{{default "5" .KC_DB_POOL_INITIAL_SIZE}}'
   KC_DB_POOL_MAX_SIZE: '{{default "10" .KC_DB_POOL_MAX_SIZE}}'
   KC_DB_POOL_MIN_SIZE: '{{default "5" .KC_DB_POOL_MIN_SIZE}}'
-  KC_TAG: '{{default "21.0.0" .KC_TAG}}'
+  KC_TAG: '{{default "21.0.2" .KC_TAG}}'
   KC_INSTANCES: '{{default "1" .KC_INSTANCES}}'
 
 dotenv: ['.env']
@@ -18,9 +18,9 @@ dotenv: ['.env']
 tasks:
   default:
     deps:
-      - keycloak
+      - grafana-client-in-keycloak
     cmds:
-      - echo Keycloak is ready for load testing!
+      - echo Keycloak is ready!
       - bash -c ./isup.sh
     silent: true
 
@@ -69,6 +69,7 @@ tasks:
       - echo {{.KC_DB_POOL_INITIAL_SIZE}} > .task/var-KC_DB_POOL_INITIAL_SIZE
       - echo {{.KC_DB_POOL_MAX_SIZE}} > .task/var-KC_DB_POOL_MAX_SIZE
       - echo {{.KC_DB_POOL_MIN_SIZE}} > .task/var-KC_DB_POOL_MIN_SIZE
+      - echo {{.KC_TAG}} > .task/var-KC_TAG
     run: once
     sources:
       - .task/subtask-{{.TASK}}.yaml
@@ -76,6 +77,7 @@ tasks:
       - test "{{.KC_DB_POOL_INITIAL_SIZE}}" == "$(cat .task/var-KC_DB_POOL_INITIAL_SIZE)"
       - test "{{.KC_DB_POOL_MAX_SIZE}}" == "$(cat .task/var-KC_DB_POOL_MAX_SIZE)"
       - test "{{.KC_DB_POOL_MIN_SIZE}}" == "$(cat .task/var-KC_DB_POOL_MIN_SIZE)"
+      - test "{{.KC_TAG}}" == "$(cat .task/var-KC_TAG)"
 
   tls:
     deps:
@@ -97,10 +99,16 @@ tasks:
       - ipchange
       - env
     cmds:
-      - kubectl create namespace monitoring || true
+      - kubectl create namespace monitoring || true || true
       - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
       - helm repo update
-      - helm upgrade --install prometheus prometheus-community/kube-prometheus-stack --version 39.11.0 -f monitoring.yaml --set grafana."grafana\.ini".server.root_url=http://grafana.{{.IP}}.nip.io --set prometheus.prometheusSpec.retention={{.KB_RETENTION}}
+      - >
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack --version 39.11.0 -f monitoring.yaml 
+        --set grafana."grafana\.ini".server.root_url=http://grafana.{{.IP}}.nip.io 
+        --set grafana."grafana\.ini"."auth\.generic_oauth".auth_url=https://keycloak.{{.IP}}.nip.io/realms/master/protocol/openid-connect/auth
+        --set grafana."grafana\.ini"."auth\.generic_oauth".token_url=https://keycloak.{{.IP}}.nip.io/realms/master/protocol/openid-connect/token
+        --set grafana."grafana\.ini"."auth\.generic_oauth".api_url=https://keycloak.{{.IP}}.nip.io/realms/master/protocol/openid-connect/userinfo
+        --set grafana."grafana\.ini".auth.signout_redirect_url=https://keycloak.{{.IP}}.nip.io/realms/master/protocol/openid-connect/logout?client_id=grafana\&redirect_uri=http%3A%2F%2Fgrafana.{{.IP}}.nip.io%2Flogin
     sources:
       - monitoring.yaml
       - .task/subtask-{{.TASK}}.yaml
@@ -129,6 +137,7 @@ tasks:
       - .task/keycloak-cli-download-etag
     sources:
       - .task/subtask-{{.TASK}}.yaml
+      - .task/var-KC_TAG
 
   keycloak-cli-unzip:
     deps:
@@ -144,6 +153,7 @@ tasks:
     sources:
       - keycloak-cli/keycloak.zip
       - minikube/.task/subtask-{{.TASK}}.yaml
+      - .task/var-KC_TAG
 
   keycloak:
     deps:
@@ -177,3 +187,12 @@ tasks:
       - keycloak/**/*.*
       - .task/subtask-{{.TASK}}.yaml
       - .task/var-KC_*
+
+  grafana-client-in-keycloak:
+    deps:
+      - keycloak
+    cmds:
+      - ./setup-grafana-in-keycloak.sh
+    sources:
+      - /setup-grafana-in-keycloak.sh
+      - .task/subtask-{{.TASK}}.yaml
