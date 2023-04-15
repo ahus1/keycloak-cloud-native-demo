@@ -191,6 +191,7 @@ tasks:
   grafana-client-in-keycloak:
     deps:
       - keycloak
+      - keycloak-cli-unzip
     cmds:
       - ./setup-grafana-in-keycloak.sh
     sources:

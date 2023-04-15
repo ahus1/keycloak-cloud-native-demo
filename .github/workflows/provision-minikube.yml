@@ -48,7 +48,6 @@ jobs:
           kubectl get events -A
       - name: Show logs on failure
         if: ${{ failure() }}
-        working-directory: provision/minikube
         run: |
           kubectl get pods -A
           kubectl get pods -A -o yaml

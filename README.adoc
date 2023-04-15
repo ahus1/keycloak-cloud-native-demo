@@ -72,6 +72,10 @@ Grafana::
 . The file `monitoring.yaml` contains the OpenID connect configuration. Some of the parameters are overwritten when calling helm with the actual URLs from the `Taskfile.yaml`.
 . In the web UI, go to the user profile (click on the avatar in the lower left corner, then on the email address), and see that the user has *Admin* privileges, as the user has the realm role *admin*.
 
+Use the following image as a map of the installed components:
+
+image::minikube-runtime-view.dio.svg[]
+
 == Further reading
 
 For load testing and more advanced features, have a look at the https://github.com/keycloak/keycloak-benchmark[keycloak-benchmark] project which includes an OpenTelemetry and a variety of different Keycloak configurations.
