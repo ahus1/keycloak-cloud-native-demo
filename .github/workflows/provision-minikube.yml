@@ -13,6 +13,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  MINIKUBE_VERSION: 'v1.28.0'
+  # the version of Kubernetes needs to be in-sync with `rebuild.sh`
+  KUBERNETES_VERSION: 'v1.25.3'
+
 jobs:
   build:
 
@@ -30,15 +35,26 @@ jobs:
       - uses: azure/setup-kubectl@v3.2
         with:
           version: 'v1.23.3'
+      - name: minikube caching
+        uses: actions/cache@v3
+        with:
+          path: ${{ runner.temp }}/.minikube/cache
+          key: minikube-${{ env.MINIKUBE_VERSION }}-${{ env.KUBERNETES_VERSION }}
       - name: Setup minikube-Kubernetes
         uses: manusa/actions-setup-minikube@v2.7.2
         with:
-          minikube version: 'v1.28.0'
-          # the version of Kubernetes needs to be in-sync with `rebuild.sh`
-          kubernetes version: 'v1.25.3'
+          minikube version: ${{ env.MINIKUBE_VERSION }}
+          kubernetes version: ${{ env.KUBERNETES_VERSION }}
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
           start args: --memory 4096
+      - name: Keycloak CLI download caching
+        uses: actions/cache@v3
+        with:
+          path: |
+            keycloak-cli/keycloak.zip
+            .task/keycloak-cli-download-etag
+          key: keycloak-download-${{ hashFiles('Taskfile.yaml') }}
       - name: Provision Keycloak and Grafana
         run: |
           PATH=$PATH:$GITHUB_WORKSPACE/bin
