@@ -1,5 +1,7 @@
 #!/bin/bash
+set -e
 set -x
+
 # Retrieve IP address for RL
 IP=$(minikube ip)
 

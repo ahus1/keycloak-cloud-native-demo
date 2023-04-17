@@ -85,6 +85,7 @@ tasks:
       - ipchange
     cmds:
       - openssl req -x509 -newkey rsa:4096 -keyout keycloak/config/cert/tls.key -out keycloak/config/cert/tls.crt -sha256 -days 365 -subj '/CN=keycloak.keycloak' -addext "subjectAltName=DNS:*.{{.IP}}.nip.io,IP:{{.IP}}" -nodes
+      - rm -f keycloak/config/cert/tls.p12
       - keytool -import -alias keycloak -keypass changeit -storepass changeit -noprompt -file keycloak/config/cert/tls.crt -keystore keycloak/config/cert/tls.p12
     generates:
       - keycloak/config/cert/tls.crt
