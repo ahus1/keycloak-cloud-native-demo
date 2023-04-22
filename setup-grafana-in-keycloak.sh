@@ -3,7 +3,7 @@ set -e
 set -x
 
 # Retrieve IP address for RL
-IP=$(minikube ip)
+export IP=$(minikube ip)
 
 # Trust the self-signed certificate of Keycloak
 export KC_OPTS="-Djavax.net.ssl.trustStore=keycloak/config/cert/tls.p12 -Djavax.net.ssl.trustStorePassword=changeit"
@@ -20,7 +20,7 @@ ID=$(keycloak-cli/keycloak/bin/kcadm.sh get clients -q clientId=grafana | jq '.[
 if [ "$ID" != "" ]; then
   keycloak-cli/keycloak/bin/kcadm.sh delete clients/${ID}
 fi
-keycloak-cli/keycloak/bin/kcadm.sh create clients -f keycloak-grafana-client.json -i
+envsubst < keycloak-grafana-client.json | keycloak-cli/keycloak/bin/kcadm.sh create clients -f - -i
 
 # Enable realm roles at user info endpoint
 JSON=$(keycloak-cli/keycloak/bin/kcadm.sh get client-scopes | jq '.[] | select( .name == "roles" )')

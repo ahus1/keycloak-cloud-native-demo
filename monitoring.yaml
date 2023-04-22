@@ -43,6 +43,7 @@ grafana:
       token_url: https://<PROVIDER_DOMAIN>/realms/<REALM_NAME>/protocol/openid-connect/token
       api_url: https://<PROVIDER_DOMAIN>/realms/<REALM_NAME>/protocol/openid-connect/userinfo
       # use resource_access.grafana for client roles instead of realm roles
+      # Syntax: JMESPath https://jmespath.org/examples.html
       role_attribute_path: "contains(realm_access.roles[*], 'admin') && 'Admin' || contains(realm_access.roles[*], 'editor') && 'Editor' || 'Viewer'"
       # only for testing, as Grafana doesn't know about Keycloak's TLS certificate in this setup
       tls_skip_verify_insecure: true
